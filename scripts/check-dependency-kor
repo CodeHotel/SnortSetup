@@ -55,6 +55,7 @@ install_packages_from_files() {
         done < "$DEPENDENCY_DIR/$file"
     else
         echo -e "${RED}선행 패키지 리스트 $file 파일이 손상되거나 발견되지 않았습니다. SnortSetup을 다시 클론한 후 시도해 주십시오.${NC}"
+	exit 4
         return 1
     fi
 }

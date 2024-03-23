@@ -55,6 +55,7 @@ install_packages_from_files() {
         done < "$DEPENDENCY_DIR/$file"
     else
         echo -e "${RED}Dependency list file $file was corrupted or not found. Please clone this repository again and retry.${NC}"
+	exit 4
         return 1
     fi
 }
