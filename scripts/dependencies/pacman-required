@@ -1,0 +1,17 @@
+iptables
+curl
+jq
+tar
+automake
+cmake
+libpcap
+libmnl
+libnetfilter_queue
+libdnet
+flex
+hwloc
+luajit
+openssl
+pcre
+zlib
+xz
