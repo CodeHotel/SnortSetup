@@ -1,0 +1,85 @@
+#!/bin/bash
+
+DEPENDENCY_DIR="./dependencies"
+NC='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+term_width=$(tput cols)
+
+detect_package_manager_and_files() {
+    if command -v apt >/dev/null 2>&1; then
+        echo "apt"
+    elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
+        echo "dnf" # Treat both yum and dnf as "dnf" for simplicity
+    elif command -v pacman >/dev/null 2>&1; then
+        echo "pacman"
+    else
+	    echo -e "${RED}[오류]지원되지 않는 운영체제입니다. apt(Debian 및Ubuntu), yum/dnf(레드햇 기반), pacman(Arch Linux 기반)만지원됩니다. ${NC}"
+        exit 1
+    fi
+}
+
+install_packages_from_files() {
+    local package_manager="$1"
+    local package_type="$2" # "REQUIRED" or "OPTIONAL"
+    local file="$3"
+    local failed_pkg_list="$4"
+
+    if [ -f "$DEPENDENCY_DIR/$file" ]; then
+        while IFS= read -r pkg || [ -n "$pkg" ]; do
+            if [ -z "$pkg" ]; then continue; fi # Skip empty lines
+            echo -e "${BLUE}패키지 $pkg 를 설치합니다.${NC}"
+            case $package_manager in
+                apt)
+                    if ! sudo apt install -y "$pkg"; then
+                        echo -e "$pkg - $package_type" >> "$failed_pkg_list"
+                    fi
+                    ;;
+                dnf|yum)
+                    if ! sudo $package_manager install -y "$pkg"; then
+                        echo -e "$pkg - $package_type" >> "$failed_pkg_list"
+                    fi
+                    ;;
+                pacman)
+                    if ! sudo pacman -S --noconfirm "$pkg"; then
+                        echo -e "$pkg - $package_type" >> "$failed_pkg_list"
+                    fi
+                    ;;
+                *)
+                    echo "${RED}[오류]$package_manager 는 지원되지 않는 패키지 매니저입니다.${NC}"
+                    exit 3
+                    ;;
+            esac
+        done < "$DEPENDENCY_DIR/$file"
+    else
+        echo -e "${RED}선행 패키지 리스트 $file 파일이 손상되거나 발견되지 않았습니다. SnortSetup을 다시 클론한 후 시도해 주십시오.${NC}"
+        return 1
+    fi
+}
+
+package_manager=$(detect_package_manager_and_files)
+failed_pkg_list=$(mktemp)
+
+# Install required and optional packages
+install_packages_from_files "$package_manager" "${RED}필수${NC}" "${package_manager}-required" "$failed_pkg_list"
+install_packages_from_files "$package_manager" "${BLUE}권장${NC}" "${package_manager}-optional" "$failed_pkg_list"
+
+printf '%*s\n' "${term_width}" '' | tr ' ' '-'
+echo
+if [ -s "$failed_pkg_list" ]; then
+    echo -e "${RED}다음 패키지가 설치되지 않았습니다. 수동 설치를 진행해 주십시오. 필수 패키지의 경우 반드시 필요하며, 권장 패키지의 경우 반드시 필요하지는 않으나 성능 저하가 있을 수 있습니다.${NC}"
+    cat "$failed_pkg_list"
+    rm "$failed_pkg_list"
+    printf '%*s\n' "${term_width}" '' | tr ' ' '-'
+    echo
+    exit 1
+else
+    echo -e "${GREEN}모든 패키지가 성공적으로 설치되었습니다.${NC}"
+    rm "$failed_pkg_list"
+    printf '%*s\n' "${term_width}" '' | tr ' ' '-'
+    echo
+    exit 0
+fi
+
