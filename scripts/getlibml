@@ -3,6 +3,6 @@
 REPO="snort3/libml"
 DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tarball_url')
 # Or for zip archive, use: DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.zipball_url')
-curl -L $DOWNLOAD_URL -o ../tmp/libml_latest_release.tar.gz
-tar -zxvf ../tmp/libml_latest_release.tar.gz -C ../tmp/libml
+sudo curl -L $DOWNLOAD_URL -o tmp/libml_latest_release.tar.gz --create-dirs
+sudo tar -zxvf tmp/libml_latest_release.tar.gz -C tmp/libml
 
