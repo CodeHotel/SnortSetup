@@ -1,0 +1,198 @@
+#!/bin/bash
+
+
+get_first_subdirectory() {
+    local parent_dir="$1"
+    echo $(find "$parent_dir" -mindepth 1 -maxdepth 1 -type d | sort | head -n 1)
+}
+
+echo "Select Language (언어를 선택하세요) [1|2]"
+echo "1. English"
+echo "2. 한국어"
+
+read -p "(1 or 2): " choice
+
+case $choice in
+    1)
+        echo "This is an installer script for snort3 by cisco. It does not directly contain any code related to snort, and there is absolutely no warranty. Press y to continue to the first step and check dependencies"
+	script_path="./check-dependency"
+        ;;
+    2)
+        echo "이 스크립트는 Cisco의 Snort3설치를 도와주는 스크립트입니다. 직/간접적으로 Snort3의 코드를 포함하고 있지 않으며, 발생하는 문제에 대한 어떠한 책임도 지지 않습니다. y를 누르시 첫 단계인 의존성 패키지 확인을 진행합니다"
+	script_path="./check-dependency-kor"
+        ;;
+    *)
+        echo "Invalid selection. Exiting."
+        exit 1
+        ;;
+esac
+
+read -p "[y/n] : " yn
+case $yn in
+    [Yy]* ) ;;
+    * ) exit 0;;
+esac
+
+cd scripts
+"$script_path"
+cd ..
+
+case $? in
+    0)
+	;;
+    1)
+	exit 1
+	;;
+    2)
+	case $choice in
+	    1)
+		echo "무시하고 설치하시겠습니까?"
+		;;
+	    *)
+		echo "Would you like to ignore and continue?"
+		;;
+	esac
+	read -p "[y/n]: " yn
+	case $yn in
+	    [Yy]*)
+		;;
+            *)
+		exit 1
+		;;
+	esac
+	;;
+    3)
+	exit 1
+	;;
+    *)
+	exit 1
+	;;
+esac
+
+case $choice in
+    2)
+        echo "TCMalloc 패키지가 설치되었습니까?"
+	;;
+    *)
+	echo "Has TCMalloc Package been installed?"
+	;;
+esac
+
+read -p "[y/n]: " tcmalloc
+
+set -e
+
+if [ -d "tmp/libdaq" ]; then
+    sudo rm -rf tmp/libdaq/*
+else
+    mkdir -p tmp/libdaq
+fi
+if [ -d "tmp/libml" ]; then
+    sudo rm -rf tmp/libml/*
+else
+    mkdir -p tmp/libml
+fi
+if [ -d "tmp/snort3" ]; then
+    sudo rm -rf tmp/snort3/*
+else
+    mkdir -p tmp/snort3
+fi
+scripts/getlibdaq
+scripts/getlibml
+scripts/getsnort
+
+base_dir=$(pwd)
+first_libml_folder=$(get_first_subdirectory "${base_dir}/tmp/libml")
+first_libdaq_folder=$(get_first_subdirectory "${base_dir}/tmp/libdaq")
+first_snort3_folder=$(get_first_subdirectory "${base_dir}/tmp/snort3")
+
+export CFLAGS="-O3 -march=native -s"
+export CXXFLAGS="-O3 -march=native -s"
+export CPPFLAGS="-O3 -march=native -s"
+
+echo "trying to move to $first_libml_folder"
+cd $first_libml_folder
+./configure.sh
+echo "trying to move to $base_dir"
+echo "current dir:"
+pwd
+cd $base_dir
+cd $first_libdaq_folder
+autoreconf -ivf
+./configure
+cd $base_dir
+
+case $choice in
+    1)
+        echo "위의 libdaq 컴파일 목록에 'nfqueue'가 yes로 되어 있는지, 그리고 이외에 필요한 모듈이 포함되어 있는지 확인하시오. y를 입력하면 라이브러리 컴파일을 진행하며, 수 초부터 기기에 따라 10분 이내의 컴파일 시간이 걸릴 수 있습니다."
+	;;
+    *)
+	echo "Check if the above libdaq compile list states 'nfqueue' as yes, and if the list looks OK in general. Selecting y will initiate compilation of libraries, which may take few seconds up to 10 minutes depending on machine"
+	;;
+esac
+read -p "[y/n]: " yn
+case $yn in
+    [Yy]*)
+	;;
+    *)
+	exit 1
+	;;
+esac
+
+case $choice in
+    1)
+        echo "snort  선행 라이브러리의 컴파일을 시작합니다. 시간이 다소 오래 걸릴 수 있습니다."
+	;;
+    *)
+	echo "Initiating make and install for libraries required by snort3. This may take a while.."
+	;;
+esac
+
+cd $first_libml_folder/build
+make && sudo make install
+cd $base_dir
+cd $first_libdaq_folder
+make && sudo make install
+cd $base_dir
+
+cd $first_snort3_folder
+case $tcmalloc in
+    [yY]*)
+	./configure_cmake.sh --build-type=Release --enable-tcmalloc
+	;;
+    *)
+	./configure_cmake.sh --build-type=Release
+	;;
+esac
+case $choice in
+    1)
+        echo "위의 Snort3 컴파일 옵션에 nfq가 포함되어 있는지, 정상적으로 모듈이 포함되었습니까? y를 선택하면 Snort3의 컴파일이 진행되며, 이는 상당한 시간이 소모될 수 있습니다. 컴파일 완료시 자동으로 설치되며, 스크립트가 종료됩니다."
+	;;
+    *)
+	echo "Check if the above Snort3 compile options contain nfq, and needed modules are successfully detected. Selecting y will initiate compilation of Snort3, which will take a long time. Once compilation has ended, the script will automatically install it and terminate."
+	;;
+esac
+read -p "[y/n]: " yn
+case $yn in
+    [Yy]*)
+	;;
+    *)
+	exit 1
+	;;
+esac
+
+cd build
+make && sudo make install
+cd $base_dir
+
+case $choice in
+    1)
+        echo "Snort3의 설치가 성공적으로 완료되었습니다. 런타임 설정은 setruntime 스크립트를 실행하십시오"
+	;;
+    *)
+	echo "The installation of Snort3 has been completed. For setting runtime daemon, run the 'setruntime' script within this directory."
+	;;
+esac
+
+
+cd $base_dir

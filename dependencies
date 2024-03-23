@@ -1,0 +1,54 @@
+download dependencies:
+curl, jq,tar
+aclocal, automake, cmake
+
+libdaq dependencies
+libpcap-dev
+libmnl-dev
+libnetfilter-queue-dev
+libdumbnet-dev
+
+snort3 dependencies
+--mandatory
+flex
+libhwloc-dev
+luajit, libluajit-5.1-dev
+openssl, libssl-dev
+libpcre3-dev
+zlib1g, zlib1g-dev
+--optional
+liblzma-dev
+libhyperscan-dev
+libunwind-dev
+libgoogle-perftools-dev
+uuid-dev
+libsafec-dev
+
+actions:
+check for download dependencies
+purge then create directory ../tmp/libdaq, ../tmp/libml, ../tmp/snort3
+find inner directories
+
+if libml selected-
+go to libml directory, run
+CFLAGS="-O3 -march=native -s" CXXFLAGS="-O3 -march=native -s" ./configure
+check for errors of running the script
+cd build
+make
+sudo make install
+
+go to libdaq directory
+run autoreconf -ivf
+export CFLAGS="-O3 -march=native -s"
+export CXXFLAGS="-O3 -march=native -s"
+eexport CPPFLAGS="-O3 -march=native -s"
+./configure
+check for errors, and if dependencies are met
+make (without cd)
+sudo make install
+
+go to snort3 directory
+./configure_cmake.sh --build-type=Release --enable-tcmalloc
+cd build
+make
+sudo make install
