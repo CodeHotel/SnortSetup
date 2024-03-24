@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Function to remove specified iptables rules
+remove_iptables_rules() {
+    # Remove loopback interface traffic rules
+    sudo iptables -D INPUT -i lo -j ACCEPT
+    sudo iptables -D OUTPUT -o lo -j ACCEPT
+
+    # Remove invalid packet dropping
+    sudo iptables -D INPUT -m conntrack --ctstate INVALID -j DROP
+
+    # Remove DDoS mitigation rules
+    sudo iptables -D INPUT -p tcp --syn -m conntrack --ctstate NEW -m limit --limit 60/s --limit-burst 120 -j ACCEPT
+
+    # Remove ICMP echo request limits
+    sudo iptables -D INPUT -p icmp --icmp-type echo-request -m limit --limit 1/s -j ACCEPT
+    sudo iptables -D INPUT -p icmp --icmp-type echo-reply -m limit --limit 1/s -j ACCEPT
+
+    # Remove Snort's NFQUEUE redirection
+    sudo iptables -D INPUT -j NFQUEUE --queue-num 0
+    sudo iptables -D OUTPUT -j NFQUEUE --queue-num 0
+
+    echo "iptables rules removed."
+}
+
+# Execute script to remove duplicate iptables rules
+./remove-iptable-duplicates
+
+# Run the function to remove iptables rules
+remove_iptables_rules
+
+echo "iptables rules cleanup and Snort shutdown completed."
+

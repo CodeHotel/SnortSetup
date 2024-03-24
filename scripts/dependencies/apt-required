@@ -3,6 +3,8 @@ curl
 jq
 tar
 automake
+gcc
+g++
 cmake
 libpcap-dev
 libmnl-dev

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+add_iptables_rules() {
+    # Allow loopback interface traffic
+    sudo iptables -A INPUT -i lo -j ACCEPT
+    sudo iptables -A OUTPUT -o lo -j ACCEPT
+
+    # Drop invalid packets
+    sudo iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
+
+    # Basic DDoS Mitigation: Limit new connections
+    sudo iptables -A INPUT -p tcp --syn -m conntrack --ctstate NEW -m limit --limit 60/s --limit-burst 120 -j ACCEPT
+
+    # Ping Flood Control: Limit ICMP echo requests
+    sudo iptables -A INPUT -p icmp --icmp-type echo-request -m limit --limit 1/s -j ACCEPT
+    sudo iptables -A INPUT -p icmp --icmp-type echo-reply -m limit --limit 1/s -j ACCEPT
+
+    # Direct traffic to Snort's NFQUEUE
+    sudo iptables -I INPUT -j NFQUEUE --queue-num 0
+    sudo iptables -I OUTPUT -j NFQUEUE --queue-num 0
+
+    echo "iptables rules added."
+}
+
+add_iptables_rules
+./remove-iptable-duplicates
+
+

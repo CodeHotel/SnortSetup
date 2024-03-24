@@ -1,0 +1,5 @@
+#!/bin/bash
+iptables-save | awk '/^COMMIT$/ { delete x; }; !x[$0]++' > /tmp/iptables.conf
+iptables -F
+iptables-restore < /tmp/iptables.conf
+if [ -f /tmp/iptables.conf ] ; then rm -f /tmp/iptables.conf ; fi

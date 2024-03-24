@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Create the log directory
+sudo mkdir -p /var/log/snort
+
+# Prompt the user to enter the lightspd tar path
+echo "Enter the path to the lightspd tar file:"
+read tarPath
+
+# Copy the tar file to /usr/local/ and extract it
+sudo cp "$tarPath" /usr/local/
+cd /usr/local/
+sudo tar xzvf "$(basename "$tarPath")"
+
+# List directories in /usr/local/lightspd/policies and prompt the user to select one
+echo "Available policy versions:"
+ls /usr/local/lightspd/policies
+echo "Enter the policy version(In numeric digits, for example 1 or 2 or 3...):"
+read policyVersion
+policyDir=$(find /usr/local/lightspd/policies -type d -name "*$policyVersion*")
+
+# List lua files in the selected directory and prompt the user to select the policy
+echo "Available policies in $policyDir:"
+ls "$policyDir"/*.lua
+echo "Enter the policy file name (e.g., security-over-connectivity.lua):"
+read policyFile
+policy="$policyDir/$policyFile"
+
+# List directories in /usr/local/lightspd/modules, and prompt the user to select the rule version
+echo "Available rule versions:"
+ls /usr/local/lightspd/modules
+echo "Enter the rule version (same format as before):"
+read ruleVersion
+ruleDir=$(find /usr/local/lightspd/modules -type d -name "*$ruleVersion*")
+
+# List directories in the selected directory, and prompt the user to select the distro(architecture) version
+echo "Available distro versions in $ruleDir:"
+ls "$ruleDir"
+echo "Enter the distro (architecture) version:"
+read distroVersion
+plugin="$ruleDir/$distroVersion"
+
+# Test the snort configuration
+sudo /usr/local/snort/bin/snort -c "$policy" --daq nfq --daq-var queue=0 --plugin-path "$plugin" -s 65535 -k none -l /var/log/snort/snortd.log -A fast -Q -T
+
+if [ $? -eq 0 ]; then
+    echo "Snort configuration test was successful."
+    echo "Starting and Enabling snortd"
+    # Additional commands if the test is successful
+    sudo mkdir -p /usr/local/snortd
+    sudo cp ./snortd/* /usr/local/snortd
+    sudo cp ./snortd/snortd.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl start snortd
+    sudo systemctl enable snortd
+else
+    echo "Snort configuration test failed."
+fi
+
