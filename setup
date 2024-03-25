@@ -172,11 +172,12 @@ case $choice in
 	echo "Initiating make and install for libraries required by snort3. This may take a while.."
 	;;
 esac
-
-cd $first_libml_folder
-cd build
-make && sudo make install
-cd $base_dir
+if [ "$libmlchoice" = "y" ] || [ "$libmlchoice" = "Y" ]; then  
+    cd $first_libml_folder
+    cd build
+    make && sudo make install
+    cd $base_dir
+fi
 
 cd $first_libdaq_folder
 make && sudo make install
