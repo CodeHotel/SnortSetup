@@ -1,44 +1,104 @@
 #!/bin/bash
 
+set -e
+#set -x
+selectSubdir() {
+    local parentDir="$1"
+    >&2 echo "Select a subdirectory:"  # Redirect this to stderr
+    local i=0
+    local subdirs=()
+
+    for subdir in "$parentDir"/*/; do
+        if [ -d "$subdir" ]; then
+            >&2 echo "[$i] $(basename "$subdir")"  # Also redirect to stderr
+            subdirs[i]="$subdir"
+            ((i++))
+        fi
+    done
+
+    if [ $i -eq 0 ]; then
+        >&2 echo "No subdirectories found in $parentDir."  # stderr
+        exit 1
+    fi
+
+    >&2 echo "-----------------------"  # stderr
+    >&2 echo -n "Enter selection (0 to $(($i - 1))): "  # stderr for prompt
+    read -p "" selection  # No prompt needed here; it's handled above
+    if ! [[ $selection =~ ^[0-9]+$ ]] || [ $selection -lt 0 ] || [ $selection -ge $i ]; then
+        >&2 echo "Invalid selection."  # stderr
+        exit 1
+    fi
+
+    echo "${subdirs[$selection]}"  # Only this line outputs to stdout
+}
+
+
+selectFile() {
+    local parentDir="$1"
+    if [[ ! -d "$parentDir" ]]; then
+        >&2 echo "The provided directory does not exist."
+        exit 1
+    fi
+
+    local files=()
+    while IFS= read -r -d $'\0' file; do
+        files+=("$file")
+    done < <(find "$parentDir" -mindepth 1 -maxdepth 1 -type f -print0)
+
+    if [[ ${#files[@]} -eq 0 ]]; then
+        >&2 echo "No files found."
+        exit 1
+    fi
+
+    >&2 echo "-----------------------"
+    >&2 echo "Select a file:"
+    local i=0
+    for file in "${files[@]}"; do
+        >&2 echo "[$i] $(basename "$file")"
+        ((i++))
+    done
+
+    >&2 echo "-----------------------"
+    >&2 echo -n "Enter selection (0 to $((${#files[@]} - 1))): "
+    read -p "" selection
+    if ! [[ $selection =~ ^[0-9]+$ ]] || [ $selection -lt 0 ] || [ $selection -ge ${#files[@]} ]; then
+        >&2 echo "Invalid selection."
+        exit 1
+    fi
+
+    echo "${files[$selection]}"
+}
+
+
 # Create the log directory
-sudo mkdir -p /var/log/snort
+#sudo mkdir -p /var/log/snort
 
 # Prompt the user to enter the lightspd tar path
-echo "Enter the path to the lightspd tar file:"
-read tarPath
+#echo "Enter the path to the lightspd tar file:"
+#read tarPath
 
 # Copy the tar file to /usr/local/ and extract it
-sudo cp "$tarPath" /usr/local/
-cd /usr/local/
-sudo tar xzvf "$(basename "$tarPath")"
+#sudo cp "$tarPath" /usr/local/
+#cd /usr/local/
+#sudo tar xzvf "$(basename "$tarPath")"
+#sudo rm "$(basename "$tarPath")"
 
 # List directories in /usr/local/lightspd/policies and prompt the user to select one
-echo "Available policy versions:"
-ls /usr/local/lightspd/policies
-echo "Enter the policy version(In numeric digits, for example 1 or 2 or 3...):"
-read policyVersion
-policyDir=$(find /usr/local/lightspd/policies -type d -name "*$policyVersion*")
+echo "Select policy version:"
+policyDir=$(selectSubdir "/usr/local/lightspd/policies")
+
 
 # List lua files in the selected directory and prompt the user to select the policy
-echo "Available policies in $policyDir:"
-ls "$policyDir"/*.lua
-echo "Enter the policy file name (e.g., security-over-connectivity.lua):"
-read policyFile
-policy="$policyDir/$policyFile"
+echo "Select policy:"
+policy=$(selectFile "$policyDir")
 
 # List directories in /usr/local/lightspd/modules, and prompt the user to select the rule version
-echo "Available rule versions:"
-ls /usr/local/lightspd/modules
-echo "Enter the rule version (same format as before):"
-read ruleVersion
-ruleDir=$(find /usr/local/lightspd/modules -type d -name "*$ruleVersion*")
+echo "Select rule version:"
+ruleDir=$(selectSubdir "/usr/local/lightspd/modules")
 
 # List directories in the selected directory, and prompt the user to select the distro(architecture) version
-echo "Available distro versions in $ruleDir:"
-ls "$ruleDir"
-echo "Enter the distro (architecture) version:"
-read distroVersion
-plugin="$ruleDir/$distroVersion"
+echo "Select the distro (or architecture) version:"
+plugin=$(selectSubdir "$ruleDir")
 
 # Test the snort configuration
 sudo /usr/local/snort/bin/snort -c "$policy" --daq nfq --daq-var queue=0 --plugin-path "$plugin" -s 65535 -k none -l /var/log/snort/snortd.log -A fast -Q -T

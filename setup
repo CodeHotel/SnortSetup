@@ -211,6 +211,16 @@ esac
 cd build
 make && sudo make install
 cd $base_dir
+case $choice in
+    2)
+        echo "임시 설치파일을 삭제합니다.."
+	;;
+    *)
+	echo "Removing temp files.."
+	;;
+esac
+
+sudo rm -rf tmp
 
 case $choice in
     2)
@@ -221,5 +231,6 @@ case $choice in
 	;;
 esac
 
+sudo ln -s /usr/local/snort/bin/snort /usr/local/bin/snort
 
 cd $base_dir
