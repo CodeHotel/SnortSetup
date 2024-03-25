@@ -5,19 +5,21 @@ base_dir=$(pwd)
 #set -x
 selectSubdir() {
     local parentDir="$1"
+    cd "$parentDir" || exit  # Ensure we can change to the parent directory
     >&2 echo "Select a subdirectory:"  # Redirect this to stderr
     local i=0
     local subdirs=()
 
-    for subdir in "$parentDir"/*/; do
+    for subdir in */; do
         if [ -d "$subdir" ]; then
-            # Use `pwd` and `basename` to construct the path without additional slashes
-            local fullPath=$(cd "$subdir" && pwd)
+            local fullDirPath=$(cd "$subdir" && pwd)  # Use pwd to get full path
             >&2 echo "[$i] $(basename "$subdir")"  # Also redirect to stderr
-            subdirs[i]="$fullPath"
+            subdirs[i]="$fullDirPath"
             ((i++))
         fi
     done
+
+    cd "$base_dir" || exit  # Return to the base directory after processing
 
     if [ $i -eq 0 ]; then
         >&2 echo "No subdirectories found in $parentDir."  # stderr
