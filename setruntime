@@ -11,8 +11,10 @@ selectSubdir() {
 
     for subdir in "$parentDir"/*/; do
         if [ -d "$subdir" ]; then
+            # Use `pwd` and `basename` to construct the path without additional slashes
+            local fullPath=$(cd "$subdir" && pwd)
             >&2 echo "[$i] $(basename "$subdir")"  # Also redirect to stderr
-            subdirs[i]="$subdir"
+            subdirs[i]="$fullPath"
             ((i++))
         fi
     done
