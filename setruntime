@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+base_dir=$(pwd)
 #set -x
 selectSubdir() {
     local parentDir="$1"
@@ -71,17 +72,17 @@ selectFile() {
 
 
 # Create the log directory
-#sudo mkdir -p /var/log/snort
+sudo mkdir -p /var/log/snort
 
 # Prompt the user to enter the lightspd tar path
-#echo "Enter the path to the lightspd tar file:"
-#read tarPath
+echo "Enter the path to the lightspd tar file:"
+read tarPath
 
 # Copy the tar file to /usr/local/ and extract it
-#sudo cp "$tarPath" /usr/local/
-#cd /usr/local/
-#sudo tar xzvf "$(basename "$tarPath")"
-#sudo rm "$(basename "$tarPath")"
+sudo cp "$tarPath" /usr/local/
+cd /usr/local/
+sudo tar xzvf "$(basename "$tarPath")"
+sudo rm "$(basename "$tarPath")"
 
 # List directories in /usr/local/lightspd/policies and prompt the user to select one
 echo "Select policy version:"
@@ -108,11 +109,14 @@ if [ $? -eq 0 ]; then
     echo "Starting and Enabling snortd"
     # Additional commands if the test is successful
     sudo mkdir -p /usr/local/snortd
-    sudo cp ./snortd/* /usr/local/snortd
+    cd $base_dir
+    sudo cp snortd/* /usr/local/snortd
     sudo cp ./snortd/snortd.service /etc/systemd/system/
     sudo systemctl daemon-reload
     sudo systemctl start snortd
     sudo systemctl enable snortd
+    echo "sudo /usr/local/snort/bin/snort -c $policy --daq nfq --daq-var queue=0 --plugin-path $plugin -s 65535 -k none -l /var/log/snort/snortd.log -A fast -Q" | sudo tee -a /usr/local/snortd/initd > /dev/null
+
 else
     echo "Snort configuration test failed."
 fi

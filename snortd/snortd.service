@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=sudo /etc/snortd/initd 
-ExecStop=sudo /etc/snortd/haltd
+ExecStart=sudo /usr/local/snortd/initd 
+ExecStop=sudo /usr/local/snortd/haltd
 StandardOutput=file:/var/log/snort/snortctl.log
 StandardError=file:/var/log/snort/snortd_err.log
 Restart=on-failure

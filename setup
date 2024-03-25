@@ -88,7 +88,7 @@ case $choice in
 	echo "현재 버전(12버전 및 그 이하는 문제가 없습니다):"
 	gcc --version
 	echo "gcc 13을 사용하는 경우 이를 해결하기 위해서는 Cisco측에서Google Flatbuffers 버전을 올려주거나, 사용자가 직접 gcc 12 (예: 12.2.1)및 호환 CMake(예: 3.25.1) 버전으로 다운그레이드하신 후, 현재 디렉토리의 scripts/dependencies 의 [본인 패키지매니저]-required 텍스트 파일에서 gcc, g++, CMake를 삭제하고 다시 진행하셔야 합니다."
-	echo"LibML을 컴파일하시려면 y, 아니라면 n을 입력해주세요."
+	echo "LibML을 컴파일하시려면 y, 아니라면 n을 입력해주세요."
 	;;
     *)
         echo "Would you like to use LibML? LibML is a feature of Snort that uses Machine Learning on packet analysis."
@@ -96,7 +96,7 @@ case $choice in
 	echo "Current gcc Version(version 12 and lower have NO PROBLEMS):"
 	gcc --version
 	echo "If the above version is displayed as greater than version 13, then your options are to await Cisco to update LibML's dependencies for Google Flatbuffer, or to manually downgrade your gcc version to 12(e.g. 12.2.1) and cmake version to compatible(e.g. 3.25.1), go to current_directory/scripts/dependencies/your_package_manager-required and delete gcc, gpp, CMake lines"
-	echo"To compile LibML, press y"
+	echo "To compile LibML, press y"
 
 	;;
 esac
