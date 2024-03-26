@@ -103,7 +103,7 @@ ruleDir=$(selectSubdir "/usr/local/lightspd/modules")
 
 # List directories in the selected directory, and prompt the user to select the distro(architecture) version
 echo "Select the distro (or architecture) version:"
-plugin=$ruleDir"
+plugin=$(selectSubdir "$ruleDir")
 
 # Test the snort configuration
 sudo /usr/local/snort/bin/snort -c "$policy" --daq nfq --daq-var queue=0 --plugin-path "$plugin" -s 65535 -k none -l /var/log/snort/snortd.log -A fast -Q -T

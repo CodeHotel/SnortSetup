@@ -24,10 +24,10 @@ remove_iptables_rules() {
 }
 
 # Execute script to remove duplicate iptables rules
-./remove-iptable-duplicates
+sudo /usr/local/snortd/remove-iptable-duplicates
 
 # Run the function to remove iptables rules
-remove_iptables_rules
+sudo /usr/local/snortd/remove_iptables_rules
 
 echo "iptables rules cleanup and Snort shutdown completed."
 
